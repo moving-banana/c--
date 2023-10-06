@@ -6,14 +6,12 @@
 #define HANGUL_SIZE 2
 
 char kors[9][3] = { "일","이","삼","사","오","육","칠","팔","구" };
-char nums[] = {1,2,3,4,5,6,7,8,9,0};
 int idx1 = 0, idx2 = 0;
 
-int KorToNum(char* str) {
-    int ret = 0;	//리턴값을 저장
-    int sLen = strlen(str);			//입력받은 스트링의 길이
-    int digit = 0, unit = 0;		//digit=1의자리  unit=십,백,천,만 의 자리
-    // int korLen = strlen(kor[0]);             korLen의값은 2 => 현재os에서 한글 한글자의 바이트값
+int KorToNum(char* str) {       //입력받은 한글을 정수로 변환
+    int ret = 0;   //리턴값을 저장
+    int sLen = strlen(str);         //입력받은 스트링의 길이
+    int digit = 0, unit = 0;      //digit=1의자리  unit=십,백,천,만 의 자리
     for (idx1 = 0; idx1 < sLen; idx1 += HANGUL_SIZE) {            //입력받은 스트링과 unit을 비교하여 해당값 저장
         if (strncmp(str + idx1, "만", HANGUL_SIZE) == 0) {
             unit = 10000;
@@ -48,61 +46,56 @@ int KorToNum(char* str) {
     return ret;
 }
 
-int NumToKor(char* str)
-{
-	char ciphers[5][4] = { "", "십", "백", "천" , "만" };
+int NumToKor(char* str){    //문자열로저장된 수를 한글문자열로 변환
+    char unitKor[6][4] = { "", "십", "백", "천" , "만" ,"십" };
 
-	int count = 0;
-	int tmp = 0;
+    int tmp = 0;        //일시적으로 인덱스값을 저장
+    int cont = 0;       //if문 조절해주는 변수
+    char newArr[25]={0,};
 
-	for (int i = 0; i < strlen(str); i++) {
-		if (str[i] == '0') {
-			if (strlen(str) - i - 1 == 8) {
-				if (count != 0) printf("억");
-				count = 0;
-			}
-			else if (strlen(str) - i - 1 == 4) {
-				if (count != 0) printf("만");
-				count = 0;
-			}
-			else if (strlen(str) == 1) printf("영");
+    printf("두 물건의 가격의 합은 : ");
+    for (idx1 = 0; idx1 < strlen(str); idx1++) {
+        if (str[idx1] == '0') {
+            if (strlen(str) - idx1 - 1 == 4) {      //십만 이상일때 idx1=1의값이 0이면
+                if (cont != 0) {
+                    printf("만");
+                    newArr[idx1*2]="만";
+                }
+                cont = 0;
+            }
+            continue;
+        }
 
-			continue;
-		}
-
-		tmp = (int)str[i] - 48;
-		count = (count * 10) + tmp;
-		if (i == strlen(str) - 1) printf("%s", kors[tmp - 1]);
-		else {
-			printf("%s%s", kors[tmp - 1], ciphers[strlen(str) - i - 1]);
-            printf("원");
-			if (strlen(str) - i - 1 == 8) count = 0;
-			else if (strlen(str) - i - 1 == 4) count = 0;
-		}
-	}
-	printf("\n");
-	return 0;
+        //문자열로 저장된 str을 int형으로 변환후 0에 해당하는 ascii코드값(문자0 = 48)을 빼준다
+        tmp = str[idx1] - 48;
+        cont += 1;
+        printf("%s%s", kors[tmp - 1], unitKor[strlen(str) - idx1 - 1]);   //나머지자리
+        newArr[idx1*2]=kors[tmp - 1];
+        newArr[idx1*2+1]=unitKor[strlen(str) - idx1 - 1];
+    }
+    printf("원\n");
+    return 0;
 }
 
 int main(void) {
     char str1[21] = { 0, }, str2[21] = { 0, };
-    char show[20];
+    char show[20] = {0, };
     int num1 = 0, num2 = 0, sum = 0;
-    // char fin;
+
     printf("물건의 가격은 0원부터 99999원까지!!\n\n");
-    printf("물건의 가격 입력 : \n");
+    printf("물건의 가격 각각 입력 : \n");
     scanf(" %s", &str1);
     scanf(" %s", &str2);
     printf("\n\n");
+
     num1 = KorToNum(str1);
     num2 = KorToNum(str2);
     sum = num1 + num2;
-
     sprintf(show, "%d", sum);
-    // printf("zzz%s", show); show문자열 출력 정상
-    printf("두 물건의 가격의 합은 : %s원\n", show);
+    // printf("두 물건의 가격의 합은 : %s원\n", show);
     NumToKor(show);
-    
+
+    // printf("두 물건의 가격의 합은 : %s원\n", show);
 
     return 0;
 }
