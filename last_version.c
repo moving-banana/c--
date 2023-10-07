@@ -84,11 +84,14 @@ void KorCalculator() {
 
     while(1){
         // 문자열과 연산 기호를 한 줄로 입력받음
+        printf("\n");
         printf("계산식을 입력하세요 (예: 이천삼백사십오+이천삼백사십오): ");
         fgets(input, sizeof(input), stdin);
 
         // 줄 바꿈 문자를 제거하여 입력을 처리
         input[strcspn(input, "\n")] = '\0';
+
+        // ESC 키 입력 감지
 
         // 문자열과 연산 기호를 분리
         sscanf(input, "%[^+-*/]%c%[^\n]", Kornum1, &opsym, Kornum2);
@@ -139,6 +142,8 @@ void NumCalculator(void){
         printf("\n");
         printf("수식을 입력하세요 (예: 5+3): ");
         fgets(input, sizeof(input), stdin);
+
+        // ESC 키 입력 감지
 
         // 입력된 수식에서 숫자와 연산자 추출
         sscanf(input, "%d%c%d", &num1, &operator, &num2);
