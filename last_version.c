@@ -2,12 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define HANGUL_SIZE 3
 #define HANGUL_NUM_MAX 9
 
 char kors[HANGUL_NUM_MAX][4] = { "일","이","삼","사","오","육","칠","팔","구" };
 int idx1 = 0, idx2 = 0;
+char ex = 'n';
 
 int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 변환
     int retValue = 0;   //리턴값을 저장
@@ -49,7 +51,8 @@ int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 �
     return retValue;
 }
 
-int NumToKor(const char* inputStr) {    //문자열로저장된 수를 한글문자열로 변환
+//문자열로저장된 수를 한글문자열로 변환
+void NumToKor(const char* inputStr) {
     char unitKor[6][4] = { "", "십", "백", "천" , "만" ,"십" };
 
     int tmp = 0;        //일시적으로 인덱스값을 저장
@@ -70,43 +73,136 @@ int NumToKor(const char* inputStr) {    //문자열로저장된 수를 한글문
         ctrl += 1;
         printf("%s%s", kors[tmp - 1], unitKor[strlen(inputStr) - idx1 - 1]);   //나머지자리 
     }
-    return 0;
+    printf("\n");
 }
 
-int main(void) {
+//한글 계산기
+void KorCalculator() {
+    char input[100]; // 입력을 저장할 문자열 배열
     char Kornum1[21] = { 0, }, Kornum2[21] = { 0, };
-    char show[32] = { 0, };
-    int num1 = 0, num2 = 0, sum = 0;
-	char opsym = 0;     //연산기호
+    char opsym = 0; // 연산 기호를 저장할 변수
 
-    printf("0부터 99999까지의 한글 계산기!!\n\n");
-    while (1)
-    {
-        scanf("%s", Kornum1);
-        scanf("%s", &opsym);
-        scanf("%s", Kornum2);
-        printf("\n\n");
+    while(1){
+        // 문자열과 연산 기호를 한 줄로 입력받음
+        printf("계산식을 입력하세요 (예: 이천삼백사십오+이천삼백사십오): ");
+        fgets(input, sizeof(input), stdin);
 
-        num1 = KorToNum(Kornum1);
-        num2 = KorToNum(Kornum2);
-        
-        switch(opsym){  //char a의 값에 따라서 case를 설정
-        case '+': //char a의 값이 +일경우 +연산을 한다.
-            sum = num1 + num2;
-            sprintf(show, "%d", sum);
-            break;
-        case '-': //char a의 값이 -일경우 -연산을 한다.
-            sum = num1 - num2;
-            sprintf(show, "%d", sum);
-            break;
-        default:
-            sprintf(show, "계산할 수 없음");
-            break;
+        // 줄 바꿈 문자를 제거하여 입력을 처리
+        input[strcspn(input, "\n")] = '\0';
+
+        // 문자열과 연산 기호를 분리
+        sscanf(input, "%[^+-*/]%c%[^\n]", Kornum1, &opsym, Kornum2);
+
+        int num1 = KorToNum(Kornum1);
+        int num2 = KorToNum(Kornum2);
+        int sum = 0;
+
+        // 연산 수행
+        switch (opsym) {
+            case '+':
+                sum = num1 + num2;
+                break;
+            case '-':
+                sum = num1 - num2;
+                break;
+            case '*':
+                sum = num1 * num2;
+                break;
+            case '/':
+                sum = num1 / num2;
+                break;
+            default:
+                printf("잘못된 연산 기호입니다.\n");
         }
-        
-    
+
+        char show[32] = { 0, };
+        sprintf(show, "%d", sum);
+
+        // 결과 출력
         NumToKor(show);
     }
 
-    return 0;
+}
+
+//숫자 계산기
+void NumCalculator(void){
+    int num1 = 0, num2 = 0;
+    char opsym = 0;
+
+    printf("숫자 계산기!!\n\n");
+
+    while(1){
+        char input[50];
+        int num1, num2;
+        char operator;
+
+        printf("\n");
+        printf("수식을 입력하세요 (예: 5+3): ");
+        fgets(input, sizeof(input), stdin);
+
+        // 입력된 수식에서 숫자와 연산자 추출
+        sscanf(input, "%d%c%d", &num1, &operator, &num2);
+
+        // 연산 수행
+        switch (operator) {
+            case '+':
+                printf("연산결과는 :");
+                printf("%d\n", num1 + num2);
+                break;
+            case '-':
+                printf("연산결과는 :");
+                printf("%d\n", num1 - num2);
+                break;
+            case '*':
+                printf("연산결과는 :");
+                printf("%d\n", num1 * num2);
+                break;
+            case '/':
+                printf("연산결과는 :");
+                if (num2 != 0) {
+                    printf("%lf\n", (float)num1 / num2); // 나눗셈 결과를 float로 변환하여 저장
+                } else {
+                    printf("0으로 나눌 수 없습니다.\n");
+                }
+                break;
+            default:
+                printf("잘못된 연산자입니다.\n");
+                printf("다시 입력하세요!!!\n");
+                break;
+        }
+    }
+}
+
+int main() {
+	char choice = 0;
+	bool flag = true;
+
+	while(flag == true){
+		printf(" 어떤 계산기를 사용하시겠습니까? \n\n");
+		printf(" 1 : 숫자 계산기\n");
+		printf(" 2 : 한글 계산기\n");
+		printf(" 1,2 중 하나 입력! -> ");
+		scanf("%s", &choice);
+        getchar();
+		printf("\n");
+
+		if (choice == '1') {
+			printf("숫자 계산기 실행!!\n");
+            NumCalculator();
+			flag = false;
+			break;
+		}
+		else if (choice == '2') {
+			printf("한글 계산기 실행!!\n");
+            KorCalculator();
+			flag = false;
+			break;
+		}
+		else {
+			printf("다시 입력하세요!!!\n");
+			flag = true;
+		}
+	}
+
+	return 0;
 }
