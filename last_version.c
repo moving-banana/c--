@@ -9,7 +9,51 @@
 
 char kors[HANGUL_NUM_MAX][4] = { "일","이","삼","사","오","육","칠","팔","구" };
 int idx1 = 0, idx2 = 0;
-char ex = 'n';
+int minus=0;       //한글계산기 음수값 컨트롤
+
+bool isEscPressed() {
+    int c = 0;
+    while ((c = getchar()) != '\n' && c != EOF) {
+        if (c == 27) {  // 27은 ESC 키의 ASCII 코드입니다
+            return true;
+        }
+    }
+    return false;
+}
+
+void restartProgram() {
+    // 입력 버퍼를 비워줍니다.
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {}
+
+    // 메뉴를 다시 보여줍니다.
+    char choice = 0;
+    bool flag = true;
+    while (flag == true) {
+        printf("어떤 계산기를 사용하시겠습니까? \n\n");
+        printf("1 : 숫자 계산기\n");
+        printf("2 : 한글 계산기\n");
+        printf("1 또는 2 중 하나 입력! -> ");
+        scanf("%s", &choice);
+        getchar(); // Enter 키를 비워줍니다.
+
+        if (choice == '1') {
+            printf("숫자 계산기 실행!!\n");
+            NumCalculator();
+            flag = false;
+            break;
+        } else if (choice == '2') {
+            printf("한글 계산기 실행!!\n");
+            KorCalculator();
+            flag = false;
+            break;
+        } else {
+            printf("다시 입력하세요!!!\n");
+            flag = true;
+        }
+    }
+
+}
 
 int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 변환
     int retValue = 0;   //리턴값을 저장
@@ -59,6 +103,15 @@ void NumToKor(const char* inputStr) {
     int ctrl = 0;       //if문 조절해주는 변수
 
     printf("연산결과는 : ");
+    if(minus=1){
+        printf("---%d", minus);
+        printf("-");
+        minus=0;
+    }
+    else{
+        printf("양수");
+        printf("+++%d", minus);
+    }
     for (idx1 = 0; idx1 < strlen(inputStr); idx1++) {
         if (inputStr[idx1] == '0') {
             if (strlen(inputStr) - idx1 - 1 == 4) {      //십만 이상일때 idx1=1의값이 0이면
@@ -119,16 +172,51 @@ void KorCalculator() {
         }
 
         char show[32] = { 0, };
+        printf("fisrt%d",minus);
+        if(sum < 0){
+            sum = -sum;
+            minus=1;
+            printf("sum%d",minus);
+        }
         sprintf(show, "%d", sum);
 
         // 결과 출력
         NumToKor(show);
+        printf("\n");
+        printf("(이전단계로 돌아가려면 esc키를 누르세요)\n");
+        printf("(계속진행하려면 아무키나 입력하세요)\n");
+
+        if (isEscPressed()) {
+            restartProgram();
+            break;
+        }
     }
 
 }
 
+void saveResultToFile(int result) {
+    FILE* file = fopen("result.txt", "w");
+    if (file != NULL) {
+        fprintf(file, "%d", result);
+        fclose(file);
+        printf("결과가 파일에 저장되었습니다.\n");
+    } else {
+        printf("파일을 열 수 없습니다.\n");
+    }
+}
+
+int loadResultFromFile() {
+    int result = 0;
+    FILE* file = fopen("result.txt", "r");
+    if (file != NULL) {
+        fscanf(file, "%d", &result);
+        fclose(file);
+    }
+    return result;
+}
+
 //숫자 계산기
-void NumCalculator(void){
+void NumCalculator(){
     int num1 = 0, num2 = 0;
     char opsym = 0;
 
@@ -143,8 +231,6 @@ void NumCalculator(void){
         printf("수식을 입력하세요 (예: 5+3): ");
         fgets(input, sizeof(input), stdin);
 
-        // ESC 키 입력 감지
-
         // 입력된 수식에서 숫자와 연산자 추출
         sscanf(input, "%d%c%d", &num1, &operator, &num2);
 
@@ -152,20 +238,28 @@ void NumCalculator(void){
         switch (operator) {
             case '+':
                 printf("연산결과는 :");
-                printf("%d\n", num1 + num2);
+                printf("%d\n\n", num1 + num2);
+                printf("(이전단계롤 돌아가려면 esc키를 누르세요)\n");
+                printf("(계속진행하려면 아무키나 입력하세요)\n");
                 break;
             case '-':
                 printf("연산결과는 :");
-                printf("%d\n", num1 - num2);
+                printf("%d\n\n", num1 - num2);
+                printf("(이전단계롤 돌아가려면 esc키를 누르세요)\n");
+                printf("(계속진행하려면 아무키나 입력하세요)\n");
                 break;
             case '*':
                 printf("연산결과는 :");
-                printf("%d\n", num1 * num2);
+                printf("%d\n\n", num1 * num2);
+                printf("(이전단계롤 돌아가려면 esc키를 누르세요)\n");
+                printf("(계속진행하려면 아무키나 입력하세요)\n");
                 break;
             case '/':
                 printf("연산결과는 :");
                 if (num2 != 0) {
-                    printf("%lf\n", (float)num1 / num2); // 나눗셈 결과를 float로 변환하여 저장
+                    printf("%lf\n\n", (float)num1 / num2); // 나눗셈 결과를 float로 변환하여 저장
+                    printf("(이전단계롤 돌아가려면 esc키를 누르세요)\n");
+                    printf("(계속진행하려면 아무키나 입력하세요)\n");
                 } else {
                     printf("0으로 나눌 수 없습니다.\n");
                 }
@@ -174,6 +268,11 @@ void NumCalculator(void){
                 printf("잘못된 연산자입니다.\n");
                 printf("다시 입력하세요!!!\n");
                 break;
+        }
+        
+        if (isEscPressed()) {
+            restartProgram();
+            break;
         }
     }
 }
