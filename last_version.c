@@ -12,10 +12,11 @@
 char kors[HANGUL_NUM_MAX][HANGUL_SIZE + 1] = { "일","이","삼","사","오","육","칠","팔","구" };
 int minus = false;       //한글계산기 음수값 컨트롤
 int won = false;        //"원"입력시
+int NumHas = false;
 
 void chooseMod();
 
-bool EscPressed() {
+int EscPressed() {
     int putEsc = 0;
     while ((putEsc = getchar()) != '\n' && putEsc != EOF) {
         if (putEsc == 27) {  // 27은 ESC 키의 ASCII 코드입니다
@@ -34,7 +35,25 @@ void restartProgram() {
     chooseMod();
 }
 
-int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 변환
+void stopProgram() {
+    printf("프로그램을 종료합니다.\n");
+    exit(0);
+}
+
+//숫자가 포함되어 있는지 확인하는 함수
+int hasInteger(const char *inputString) {
+    // 문자열의 각 문자를 순회하며 숫자인지 확인합니다.
+    for (int i = 0; inputString[i] != '\0'; ++i) {
+        // 각 문자가 '0'부터 '9' 사이에 있는지 확인하여 숫자인지 판단합니다.
+        if (inputString[i] >= '0' && inputString[i] <= '9') {
+            return true; // 숫자가 포함되어 있으면 참을 반환합니다.
+        }
+    }
+    return false; // 숫자가 포함되어 있지 않으면 거짓을 반환합니다.
+}
+
+//입력받은 한글을 정수로 변환
+int KorToNum(const char* inputStr) {       
     int retValue = 0;   //리턴값을 저장
     int sLen = strlen(inputStr);         //입력받은 스트링의 길이
     int idx1 = 0, idx2 = 0;
@@ -71,7 +90,6 @@ int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 �
 
         if(strcmp(inputStr + idx1, "원") == 0){
             won = true;
-            printf("원 있음!");
         }
     }
 
@@ -82,7 +100,7 @@ int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 �
 
 //문자열로저장된 수를 한글문자열로 변환
 void NumToKor(const char* inputStr) {
-    char unitKor[9][4] = { "", "십", "백", "천" , "만" ,"십", "백", "천", "억", "십" };
+    char unitKor[HANGUL_NUM_MAX+1][HANGUL_SIZE + 1] = { "", "십", "백", "천" , "만" , "십" , "백" , "천" , "억" , "십"};
     int idx1 = 0, idx2 = 0;
 
     int tmp = 0;        //일시적으로 인덱스값을 저장
@@ -97,7 +115,11 @@ void NumToKor(const char* inputStr) {
 
     for (idx1 = 0; idx1 < strlen(inputStr); idx1++) {
         if (inputStr[idx1] == '0') {
-            if (strlen(inputStr) - idx1 - 1 == 4) {      //십만 이상일때 idx1=1의값이 0이면
+            if(strlen(inputStr) - idx1 - 1 == 8) {
+                if (ctrl != 0) printf("억");
+                ctrl = 0;
+            }
+            else if (strlen(inputStr) - idx1 - 1 == 4) {      //십만 이상일때 idx1=1의값이 0이면
                 if (ctrl != 0) printf("만");
                 ctrl = 0;
             }
@@ -118,11 +140,24 @@ void NumToKor(const char* inputStr) {
     printf("\n");
 }
 
+bool hasZero(const char *inputString) {
+    // 문자열의 각 문자를 순회하며 숫자인지 확인합니다.
+    for (int i = 0; inputString[i] != '\0'; ++i) {
+        // 각 문자가 '0'부터 '9' 사이에 있는지 확인하여 숫자인지 판단합니다.
+        if (inputString[i] == '영') {
+            return true; // 숫자가 포함되어 있으면 참을 반환합니다.
+        }
+    }
+    return false; // 숫자가 포함되어 있지 않으면 거짓을 반환합니다.
+}
+
 //한글 계산기
 void KorCalculator() {
     char input[MAX_INPUT_LENGTH]; // 입력을 저장할 문자열 배열
     char Kornum1[KORNUM_LENGTH] = { 0, }, Kornum2[KORNUM_LENGTH] = { 0, };
     char operator = 0; // 연산 기호를 저장할 변수
+    long long int sum = 0;     //곱하기값이 21억을 넘어갈때를 대비
+    int Zero = false;
 
     while(1){
         // 문자열과 연산 기호를 한 줄로 입력받음
@@ -136,68 +171,80 @@ void KorCalculator() {
         // 문자열과 연산 기호를 분리
         sscanf(input, "%[^+-*/]%c%[^\n]", Kornum1, &operator, Kornum2);
 
-        int num1 = KorToNum(Kornum1);
-        int num2 = KorToNum(Kornum2);
-        int sum = 0;
-
-        // 연산 수행
-        switch (operator) {
-            case '+':
-                sum = num1 + num2;
-                break;
-            case '-':
-                sum = num1 - num2;
-                break;
-            case '*':
-                sum = num1 * num2;
-                break;
-            case '/':
-                sum = num1 / num2;
-                break;
-            default:
-                printf("잘못된 연산 기호입니다.\n");
+        if (hasInteger(input)) {
+            NumHas = true;
+        } else {
+            NumHas = false;
         }
 
-        char show[MAX_INPUT_LENGTH] = { 0, };
+        hasZero(input);
 
-        if(sum < 0){
-            sum = -sum;
-            minus = true;
+        if(input == "영"){
+            int Zero = true;
+            printf("zero");
         }
-        sprintf(show, "%d", sum);   //sum 변수에 저장된 정수 값을 문자열로 변환하여 show 문자열 배열에 저장
 
-        // 결과 출력
-        NumToKor(show);
-        printf("\n");
-        printf("(이전단계로 돌아가려면 esc키를 누르세요)\n");
-        printf("(계속진행하려면 아무키나 입력하세요)\n");
+        if (NumHas == false)
+        {
+            int num1 = KorToNum(Kornum1);
+            int num2 = KorToNum(Kornum2);
 
-        if (EscPressed()) {
-            restartProgram();
-            break;
+            // 연산 수행
+            switch (operator) {
+                case '+':
+                    sum = num1 + num2;
+                    break;
+                case '-':
+                    sum = num1 - num2;
+                    break;
+                case '*':
+                    sum = (long long)num1 * num2;
+                    break;
+                case '/':
+                    sum = num1 / num2;
+                    break;
+                default:
+                    printf("잘못된 입력입니다 다시입력하세요.\n");
+            }
+
+            char show[MAX_INPUT_LENGTH] = { 0, };
+
+            if(sum < 0){
+                sum = -sum;
+                minus = true;
+            }
+
+            if(Zero == true){
+                sum = 0;
+                printf("zero");
+            }
+
+            sprintf(show, "%lld", sum);   //sum 변수에 저장된 정수 값을 문자열로 변환하여 show 문자열 배열에 저장
+
+            // 결과 출력
+            NumToKor(show);
+            printf("\n");
+            printf("(이전단계로 돌아가려면 esc키를 누르세요)\n");
+            printf("(계속진행하려면 아무키나 입력하세요)\n");
+
+            if (EscPressed()) {
+                restartProgram();
+                break;
+            }
+        }
+        else{
+            printf("\n");
+            printf("잘못된 입력입니다.\n");
+            printf("\n");
+            printf("(이전단계로 돌아가려면 esc키를 누르세요)\n");
+            printf("(계속진행하려면 아무키나 입력하세요)\n");
+
+            if (EscPressed()) {
+                restartProgram();
+                break;
+            }
         }
     }
-}
-
-void saveResultToFile(int result) {
-    FILE* file = fopen("result.txt", "w");
-    if (file != NULL) {
-        fprintf(file, "%d", result);
-        fclose(file);
-        printf("결과가 파일에 저장되었습니다.\n");
-    } else {
-        printf("파일을 열 수 없습니다.\n");
-    }
-}
-
-int loadResultFromFile() {
-    int result = 0;
-    FILE* file = fopen("result.txt", "r");
-    if (file != NULL) {
-        fscanf(file, "%d", &result);
-        fclose(file);
-    }
-    return result;
 }
 
 //숫자 계산기
@@ -216,6 +263,12 @@ void NumCalculator(){
         // 입력된 수식에서 숫자와 연산자 추출
         sscanf(input, "%d%c%d", &num1, &operator, &num2);
 
+        if (hasInteger(input)) {
+            NumHas = true;
+        } else {
+            NumHas = false;
+        }
+
         // 연산 수행
         switch (operator) {
             case '+':
@@ -232,7 +285,7 @@ void NumCalculator(){
                 break;
             case '*':
                 printf("연산결과는 :");
-                printf("%d\n\n", num1 * num2);
+                printf("%lld\n\n", (long long)num1 * num2);
                 printf("(이전단계롤 돌아가려면 esc키를 누르세요)\n");
                 printf("(계속진행하려면 아무키나 입력하세요)\n");
                 break;
