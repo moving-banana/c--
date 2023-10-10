@@ -6,15 +6,19 @@
 
 #define HANGUL_SIZE 3
 #define HANGUL_NUM_MAX 9
+#define MAX_INPUT_LENGTH 100
+#define KORNUM_LENGTH 21
 
-char kors[HANGUL_NUM_MAX][4] = { "일","이","삼","사","오","육","칠","팔","구" };
-int idx1 = 0, idx2 = 0;
-int minus=0;       //한글계산기 음수값 컨트롤
+char kors[HANGUL_NUM_MAX][HANGUL_SIZE + 1] = { "일","이","삼","사","오","육","칠","팔","구" };
+int minus = false;       //한글계산기 음수값 컨트롤
+int won = false;        //"원"입력시
 
-bool isEscPressed() {
-    int c = 0;
-    while ((c = getchar()) != '\n' && c != EOF) {
-        if (c == 27) {  // 27은 ESC 키의 ASCII 코드입니다
+void chooseMod();
+
+bool EscPressed() {
+    int putEsc = 0;
+    while ((putEsc = getchar()) != '\n' && putEsc != EOF) {
+        if (putEsc == 27) {  // 27은 ESC 키의 ASCII 코드입니다
             return true;
         }
     }
@@ -23,43 +27,19 @@ bool isEscPressed() {
 
 void restartProgram() {
     // 입력 버퍼를 비워줍니다.
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF) {}
+    int putEsc = 0;
+    while ((putEsc = getchar()) != '\n' && putEsc != EOF) {}
 
     // 메뉴를 다시 보여줍니다.
-    char choice = 0;
-    bool flag = true;
-    while (flag == true) {
-        printf("어떤 계산기를 사용하시겠습니까? \n\n");
-        printf("1 : 숫자 계산기\n");
-        printf("2 : 한글 계산기\n");
-        printf("1 또는 2 중 하나 입력! -> ");
-        scanf("%s", &choice);
-        getchar(); // Enter 키를 비워줍니다.
-
-        if (choice == '1') {
-            printf("숫자 계산기 실행!!\n");
-            NumCalculator();
-            flag = false;
-            break;
-        } else if (choice == '2') {
-            printf("한글 계산기 실행!!\n");
-            KorCalculator();
-            flag = false;
-            break;
-        } else {
-            printf("다시 입력하세요!!!\n");
-            flag = true;
-        }
-    }
-
+    chooseMod();
 }
 
 int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 변환
     int retValue = 0;   //리턴값을 저장
     int sLen = strlen(inputStr);         //입력받은 스트링의 길이
-    // printf("%d", strlen(inputStr));     3
+    int idx1 = 0, idx2 = 0;
     int digit = 0, unit = 0;      //digit=각자리의 정수  unit=십,백,천,만 의 자리
+
     for (idx1 = 0; idx1 < sLen; idx1 += HANGUL_SIZE) {            //입력받은 스트링과 unit을 비교하여 해당값 저장
         if (strncmp(inputStr + idx1, "만", HANGUL_SIZE) == 0) {
             unit = 10000;
@@ -88,6 +68,11 @@ int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 �
             digit = 0;
             unit = 0;
         }
+
+        if(strcmp(inputStr + idx1, "원") == 0){
+            won = true;
+            printf("원 있음!");
+        }
     }
 
     retValue += digit;
@@ -97,21 +82,19 @@ int KorToNum(const char* inputStr) {       //입력받은 한글을 정수로 �
 
 //문자열로저장된 수를 한글문자열로 변환
 void NumToKor(const char* inputStr) {
-    char unitKor[6][4] = { "", "십", "백", "천" , "만" ,"십" };
+    char unitKor[9][4] = { "", "십", "백", "천" , "만" ,"십", "백", "천", "억", "십" };
+    int idx1 = 0, idx2 = 0;
 
     int tmp = 0;        //일시적으로 인덱스값을 저장
     int ctrl = 0;       //if문 조절해주는 변수
 
     printf("연산결과는 : ");
-    if(minus=1){
-        printf("---%d", minus);
+
+    if(minus == true){  //음수값일때 앞에 - 를 붙여주자
         printf("-");
-        minus=0;
+        minus=false;
     }
-    else{
-        printf("양수");
-        printf("+++%d", minus);
-    }
+
     for (idx1 = 0; idx1 < strlen(inputStr); idx1++) {
         if (inputStr[idx1] == '0') {
             if (strlen(inputStr) - idx1 - 1 == 4) {      //십만 이상일때 idx1=1의값이 0이면
@@ -126,14 +109,20 @@ void NumToKor(const char* inputStr) {
         ctrl += 1;
         printf("%s%s", kors[tmp - 1], unitKor[strlen(inputStr) - idx1 - 1]);   //나머지자리 
     }
+
+    if(won == true){
+        printf("원");
+        won = false;
+    }
+
     printf("\n");
 }
 
 //한글 계산기
 void KorCalculator() {
-    char input[100]; // 입력을 저장할 문자열 배열
-    char Kornum1[21] = { 0, }, Kornum2[21] = { 0, };
-    char opsym = 0; // 연산 기호를 저장할 변수
+    char input[MAX_INPUT_LENGTH]; // 입력을 저장할 문자열 배열
+    char Kornum1[KORNUM_LENGTH] = { 0, }, Kornum2[KORNUM_LENGTH] = { 0, };
+    char operator = 0; // 연산 기호를 저장할 변수
 
     while(1){
         // 문자열과 연산 기호를 한 줄로 입력받음
@@ -141,20 +130,18 @@ void KorCalculator() {
         printf("계산식을 입력하세요 (예: 이천삼백사십오+이천삼백사십오): ");
         fgets(input, sizeof(input), stdin);
 
-        // 줄 바꿈 문자를 제거하여 입력을 처리
+        // 줄 바꿈 문자를 NULL문자로 변경하여 입력을 처리
         input[strcspn(input, "\n")] = '\0';
 
-        // ESC 키 입력 감지
-
         // 문자열과 연산 기호를 분리
-        sscanf(input, "%[^+-*/]%c%[^\n]", Kornum1, &opsym, Kornum2);
+        sscanf(input, "%[^+-*/]%c%[^\n]", Kornum1, &operator, Kornum2);
 
         int num1 = KorToNum(Kornum1);
         int num2 = KorToNum(Kornum2);
         int sum = 0;
 
         // 연산 수행
-        switch (opsym) {
+        switch (operator) {
             case '+':
                 sum = num1 + num2;
                 break;
@@ -171,14 +158,13 @@ void KorCalculator() {
                 printf("잘못된 연산 기호입니다.\n");
         }
 
-        char show[32] = { 0, };
-        printf("fisrt%d",minus);
+        char show[MAX_INPUT_LENGTH] = { 0, };
+
         if(sum < 0){
             sum = -sum;
-            minus=1;
-            printf("sum%d",minus);
+            minus = true;
         }
-        sprintf(show, "%d", sum);
+        sprintf(show, "%d", sum);   //sum 변수에 저장된 정수 값을 문자열로 변환하여 show 문자열 배열에 저장
 
         // 결과 출력
         NumToKor(show);
@@ -186,12 +172,11 @@ void KorCalculator() {
         printf("(이전단계로 돌아가려면 esc키를 누르세요)\n");
         printf("(계속진행하려면 아무키나 입력하세요)\n");
 
-        if (isEscPressed()) {
+        if (EscPressed()) {
             restartProgram();
             break;
         }
     }
-
 }
 
 void saveResultToFile(int result) {
@@ -218,15 +203,12 @@ int loadResultFromFile() {
 //숫자 계산기
 void NumCalculator(){
     int num1 = 0, num2 = 0;
-    char opsym = 0;
+    char input[50] = {0,};
+    char operator = 0;
 
     printf("숫자 계산기!!\n\n");
 
     while(1){
-        char input[50];
-        int num1, num2;
-        char operator;
-
         printf("\n");
         printf("수식을 입력하세요 (예: 5+3): ");
         fgets(input, sizeof(input), stdin);
@@ -270,15 +252,15 @@ void NumCalculator(){
                 break;
         }
         
-        if (isEscPressed()) {
+        if (EscPressed()) {
             restartProgram();
             break;
         }
     }
 }
 
-int main() {
-	char choice = 0;
+void chooseMod(){
+    char choice = 0;
 	bool flag = true;
 
 	while(flag == true){
@@ -307,6 +289,9 @@ int main() {
 			flag = true;
 		}
 	}
+}
 
+int main() {
+	chooseMod();
 	return 0;
 }
