@@ -5,6 +5,46 @@
 
 char nums[9][4] = { "일","이","삼","사","오","육","칠","팔","구" };
 
+if(입력한 input이 2개){
+    // 연산 수행
+    switch (operator) {
+        case '+':
+            sum = num1 + num2;
+            break;
+        case '-':
+            sum = num1 - num2;
+            break;
+        case '*':
+            sum = (long long)num1 * num2;
+            break;
+        case '/':
+            sum = num1 / num2;
+            break;
+        default:
+            printf("잘못된 입력입니다 다시입력하세요.\n");
+    }
+    result = sum;
+}
+else if (입력한 input이 3개이상){
+    switch (operator) {
+        case '+':
+            sum = result + 새로입력한 input;
+            break;
+        case '-':
+            sum = result - 새로입력한 input;
+            break;
+        case '*':
+            sum = (long long)result * 새로입력한 input;
+            break;
+        case '/':
+            sum = result / 새로입력한 input;
+            break;
+        default:
+            printf("잘못된 입력입니다 다시입력하세요.\n");
+    }
+    result =sum;
+}
+
 int ChangeValue(char* str) {
     int ret = 0;
     int sLen = strlen(str);
