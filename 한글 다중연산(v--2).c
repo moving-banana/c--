@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include "title.c"
+#include "explain.c"
 
 #define HANGUL_SIZE 3
 #define HANGUL_NUM_MAX 9
@@ -10,10 +13,28 @@
 #define MAX_OPERATORS 100
 
 int minus = false;       //한글계산기 음수값 컨트롤
-int won = false;        //"원"입력시
+int won = false;         //"원"입력시
 char kors[HANGUL_NUM_MAX][HANGUL_SIZE + 1] = { "일","이","삼","사","오","육","칠","팔","구" };
 
-// 사칙 연산의 결과를 반환하는 함수이다. 파라미터로 연산 전체릐str과, 그 str의 길이를 받는다.
+void StartFunc();
+void chooseMod();
+
+bool EscPressed() {
+    int putEsc = 0;
+    while ((putEsc = getchar()) != '\n' && putEsc != EOF) {
+        if (putEsc == 27) {  // 27은 ESC 키의 ASCII 코드입니다
+            return true;
+        }
+    }
+    return false;
+}
+
+void BackToStart() {
+    // 메뉴를 다시 보여줍니다.
+    chooseMod();
+}
+
+// 사칙 연산의 결과를 반환하는 함수이다. 파라미터로 연산 전체의str과, 그 str의 길이를 받는다.
 int Operation(char AcceptNumstr[MAX_STRINGS], int AccNumstrLen) {
     int  numArr[MAX_STRINGS] = {0};   // 수를 저장하는 공간
     int  numArrIdx = 0;              // numArr배열에 들어가는 갯수를 계산하기 위한 변수
@@ -180,7 +201,8 @@ void NumToKor(const char* inputStr) {
     int ctrl = 0;       //if문 조절해주는 변수
 
     printf("연산결과는 : ");
-
+    printf("\033[1m"); //굵은글자
+    printf("\033[4m"); // 밑줄 글자로 출력
     if(minus == true){  //음수값일때 앞에 - 를 붙여주자
         printf("-");
         minus=false;
@@ -209,7 +231,7 @@ void NumToKor(const char* inputStr) {
         printf("원");
         won = false;
     }
-
+    printf("\033[0m");
     printf("\n");
 }
 
@@ -224,13 +246,26 @@ void splitString(char *input, char strings[MAX_STRINGS][MAX_STRING_LENGTH], char
             // printf("operator%d : %c\n", operatorIndex, operators[operatorIndex - 1]);
         }
     }
+    bool hasUnknownCharacter = false;
+
+    for (int i = 0; i < strlen(input); i++) {
+        if (!(!('0' <= input[i] && input[i] <= '9')) &&
+            input[i] != '+' && input[i] != '-' && input[i] != '*' && input[i] != '/' ) {
+            hasUnknownCharacter = true; // 숫자와 괄호, 그리고 사칙연산 이외의 값을 입력받으면 hasUnknownCharacter을 true으로 변환
+        }
+    }
+
+    if (hasUnknownCharacter == true) { // hasUnknownCharacter가 true일 경우(엉뚱한 값을 입력받았을 경우)
+        printf("잘못된 입력 값이 있습니다.\n"); // 메시지 출력
+        StartFunc();
+    }
     printf("\n");
 
     char *token = strtok(input, "+-*/");    //토큰에 연산기호를 기점으로 문자열들 저장
     *countOper = 0;
 
     // token이 NULL이 아니고, *countOper가 MAX_STRINGS - 1보다 작을때
-    while ((token != NULL) && (*countOper < MAX_STRINGS - 1)) {
+    while (token != NULL) {
 
         // 문자열 복사
         strcpy(strings[*countOper], token);
@@ -240,7 +275,34 @@ void splitString(char *input, char strings[MAX_STRINGS][MAX_STRING_LENGTH], char
     }
 }
 
-int main() {
+//띄어쓰기 입력시 문자열 처리
+void removeSpaces(char* input) {
+    int count = 0;
+    for (int i = 0; input[i]; i++) {
+        if (input[i] != ' ') {
+            input[count++] = input[i];
+        }
+    }
+    input[count] = '\0';
+}
+
+//결과값을 계속해서 저장받는 함수
+void remains(int result) {
+    int resultsSize = 0;
+    char remainResult[MAX_STRINGS] = {0};
+    if (resultsSize < MAX_STRINGS) {
+        remainResult[resultsSize] = result;
+        resultsSize++;
+    } else {
+        printf("결과를 더 이상 저장할 수 없습니다.\n");
+    }
+
+    for(int i=0; i<resultsSize; i++){
+        printf("remain : %c\n", remainResult[i]);
+    }
+}
+
+void StartFunc() {
     char input[100] = {0};
     char strings[MAX_STRINGS][MAX_STRING_LENGTH] = {0}; //input의 str을 저장하는 배열
     char operators[MAX_OPERATORS] = {0}; //input의 연산기호를 저장하는 배열
@@ -249,11 +311,15 @@ int main() {
     char NewInput[MAX_STRINGS] = {0}; //변환된 숫자와 연산기호를 다시 문자열로 저장할 배열
     int NewInputLength = 0;
 
-    printf("수식을 입력하세요 (나가려면 엔터 키를 누르세요):\n");
+    while (1) {
+        printf("수식을 입력하세요 (예: 이천삼백사십오+이천삼백사십오-육백사십...)\n");
+        printf("입력 ▶ ");
+        fgets(input, sizeof(input), stdin);
 
-    while (fgets(input, sizeof(input), stdin) != NULL) {
         // 입력 문자열에서 줄 바꿈 문자를 제거
         input[strcspn(input, "\n")] = '\0';
+
+        removeSpaces(input);
 
         // 입력이 비어 있는지 확인 (엔터 키만 눌렸을 경우)
         if (strlen(input) == 0) {
@@ -275,14 +341,20 @@ int main() {
             NewInput[NewInputLength++] = operators[i];
         }
         NewInput[NewInputLength] = '\0'; //NULL값을 집어넣어 문자열을 완성
-        printf("변환된 입력값: %s\n", NewInput);
-        printf("\n");
+        // printf("변환된 입력값: %s\n", NewInput);
 
-        int result = Operation(NewInput, NewInputLength);
         char show[MAX_STRINGS] = { 0, };
+        int result = Operation(NewInput, NewInputLength);
+
+        if( result < 0 ){
+            result = -result;
+            minus = true;
+        }
+
+        remains(result); // 결과를 배열에 추가
         sprintf(show, "%d", result);
         NumToKor(show);
-        printf("(정수로는 %d)\n", result);
+        printf("show : %s", show);
 
         //초기화
         memset(input, 0, sizeof(input));
@@ -291,7 +363,54 @@ int main() {
         memset(num, 0, sizeof(num));
         memset(NewInput, 0, sizeof(NewInput));
         NewInputLength = 0;
+        
+        printf("(이전단계롤 돌아가려면 esc키를 누르세요)\n");
+        printf("(계속진행하려면 아무키나 입력하세요)\n");
+        if (EscPressed()) {
+            BackToStart();
+            break;
+        }
     }
+}
 
+void chooseMod(){
+    char choose = 0;
+	bool flag = true;
+    while(flag == true){
+        printf("\n");
+        printf(" 바로시작!!     ▶ 1 입력\n");
+        printf(" 설명보기!!     ▶ 2 입력\n");
+        printf("입력 ▶ ");
+        scanf("%s", &choose);
+        getchar();
+
+        if (choose == '1') {
+            printf("\033[1m\n"); //굵은글자
+            printf("한글 계산기!!\n");
+            printf("\033[0m");
+            StartFunc();
+            flag = false;
+            break;
+        }
+        else if (choose == '2') {
+            explain();
+            if (EscPressed()) {
+                BackToStart();
+            }
+            else {
+                printf("다시 입력하세요!!!\n");
+            }
+            flag = false;
+        }
+        else {
+            printf("다시 입력하세요!!!\n");
+            flag = true;
+        }
+    }
+}
+
+int main(){
+    title();
+    chooseMod();
     return 0;
 }
