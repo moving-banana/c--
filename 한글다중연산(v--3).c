@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "title.c"
 #include "explain.c"
 
@@ -14,6 +15,7 @@
 
 int minus = false;       //한글계산기 음수값 컨트롤
 int won = false;         //"원"입력시
+int looptimes = 0;       //루프 컨트롤 변수
 char kors[HANGUL_NUM_MAX][HANGUL_SIZE + 1] = { "일","이","삼","사","오","육","칠","팔","구" };
 
 int resultsSize = 0;
@@ -23,6 +25,7 @@ char Inpres[MAX_STRINGS][MAX_STRINGS] = {0};
 void StartFunc();
 void chooseMod();
 
+// ESC키 입력시 동작 함수
 bool EscPressed() {
     int putEsc = 0;
     while ((putEsc = getchar()) != '\n' && putEsc != EOF) {
@@ -31,6 +34,11 @@ bool EscPressed() {
         }
     }
     return false;
+}
+
+// 터미널을 새로 그려주는 함수
+void clearScreen() {
+    printf("\033[H\033[J"); // ANSI 이스케이프 시퀀스로 화면 지우기
 }
 
 // 사칙 연산의 결과를 반환하는 함수이다. 파라미터로 연산 전체의str과, 그 str의 길이를 받는다.
@@ -239,17 +247,17 @@ void NumToKor(const char* inputStr) {
 void splitString(char *input, char strings[MAX_STRINGS][MAX_STRING_LENGTH], char operators[MAX_OPERATORS], int *countOper) {
     int operatorIndex = 0;
     // 연산자 복사
-    for(int i=0; i<strlen(input); i++){
-        if(input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/'){
-            operators[operatorIndex++] = input[i];
+    for(int inputIdx=0; inputIdx<strlen(input); inputIdx++){
+        if(input[inputIdx] == '+' || input[inputIdx] == '-' || input[inputIdx] == '*' || input[inputIdx] == '/'){
+            operators[operatorIndex++] = input[inputIdx];
             // printf("operator%d : %c\n", operatorIndex, operators[operatorIndex - 1]);
         }
     }
     bool hasUnknownCharacter = false;
 
-    for (int i = 0; i < strlen(input); i++) {
-        if (!(!('0' <= input[i] && input[i] <= '9')) &&
-            input[i] != '+' && input[i] != '-' && input[i] != '*' && input[i] != '/' ) {
+    for (int inputIdx = 0; inputIdx < strlen(input); inputIdx++) {
+        if (!(!('0' <= input[inputIdx] && input[inputIdx] <= '9')) &&
+            input[inputIdx] != '+' && input[inputIdx] != '-' && input[inputIdx] != '*' && input[inputIdx] != '/' ) {
             hasUnknownCharacter = true; // 숫자와 사칙연산 이외의 값을 입력받으면 hasUnknownCharacter을 true으로 변환
         }
     }
@@ -304,10 +312,10 @@ void printStore() {
     if (resultsSize == 0) {
         printf("저장된 결과값이 없습니다.\n");
     } else {
-        for (int i = 0; i < resultsSize; i++) {
-            printf("%d번째\n", i+1);
-            printf("입력한 수식 : %s\n", Inpstore[i]);
-            NumToKor(Inpres[i]);
+        for (int printIdx = 0; printIdx < resultsSize; printIdx++) {
+            printf("%d번째\n", printIdx+1);
+            printf("입력한 수식 : %s\n", Inpstore[printIdx]);
+            NumToKor(Inpres[printIdx]);
         }
     }
     printf("(이전 단계로 돌아가려면 esc 키를 누르세요)\n");
@@ -383,19 +391,29 @@ void StartFunc() {
     }
 }
 
+// option선택자
 void chooseMod(){
     char choose = 0;
 	bool flag = true;
     while(flag == true){
         printf("\n");
+        printf("\033[1m\n");
+        printf("OPTION 선택!\n\n");
+        printf("\033[0m");
         printf(" 바로시작!!        ▶ 1 입력\n");
-        printf(" 설명보기!!        ▶ 2 입력\n");
-        printf(" 저장값 보기!!     ▶ 3 입력\n");
+        printf(" 저장값 보기!!     ▶ 2 입력\n");
+        printf(" 설명보기!!        ▶ 3 입력\n");
+        printf(" 프로그램 종료!!   ▶ 4 입력\n\n");
+        if(looptimes == 0){
+            printf("(처음 사용하신다면 설명을 먼저 보시길 추천드립니다!)\n\n");
+            looptimes++;
+        }
         printf("입력 ▶ ");
         scanf("%s", &choose);
         getchar();
 
         if (choose == '1') {
+            clearScreen();
             printf("\033[1m\n"); //굵은글자
             printf("한글 계산기!!\n");
             printf("\033[0m");
@@ -403,7 +421,15 @@ void chooseMod(){
             flag = false;
             break;
         }
-        else if (choose == '2') {
+        else if (choose == '2'){
+            clearScreen();
+            printStore();
+            if (EscPressed()) {
+                chooseMod();
+            }
+        }
+        else if (choose == '3') {
+            clearScreen();
             explain();
             if (EscPressed()) {
                 chooseMod();
@@ -413,11 +439,20 @@ void chooseMod(){
             }
             flag = false;
         }
-        else if (choose == '3'){
-            printStore();
-            if (EscPressed()) {
-                chooseMod();
-            }
+        else if (choose == '4'){
+            printf("프로그램을 종료합니다!\n");
+            printf("////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            printf("3초후 종료!!\n");
+            printf("\n");
+            sleep(1);
+            printf("2초후 종료!!\n");
+            printf("\n");
+            sleep(1);
+            printf("1초후 종료!!\n");
+            printf("\n");
+            sleep(1);
+            system("clear");
+            exit(0);
         }
         else {
             printf("다시 입력하세요!!!\n");
@@ -427,6 +462,7 @@ void chooseMod(){
 }
 
 int main(){
+    system("clear");
     title();
     chooseMod();
     return 0;
